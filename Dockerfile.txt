@@ -1,0 +1,22 @@
+FROM python:3.13-slim
+
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --create-home --uid 10001 creator
+
+COPY ["likeboost-render (1).zip", "/tmp/likeboost-render.zip"]
+
+RUN python -m zipfile -e /tmp/likeboost-render.zip /srv && rm /tmp/likeboost-render.zip
+
+WORKDIR /srv/likeboost
+
+RUN pip install --no-cache-dir -r requirements.txt && mkdir -p /tmp/likeboost && chown creator:creator /tmp/likeboost
+
+ENV COOKIE_SECURE=true EPHEMERAL_STORAGE=true DATABASE_PATH=/tmp/likeboost/likeboost.sqlite3 MEDIA_ROOT=/tmp/likeboost/private-media WORKER_CONCURRENCY=1
+
+USER creator
+EXPOSE 10000
+
+CMD ["python", "server.py"]
